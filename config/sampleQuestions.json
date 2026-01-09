@@ -1,0 +1,7 @@
+{
+  "questions": [
+    "For each store, show any freezers operated by that store that ever had a humidity lower than 46 percent.",
+    "What is the top product by revenue across all stores?",
+    "What is the product revenue for stores in Paris?"
+  ]
+}
