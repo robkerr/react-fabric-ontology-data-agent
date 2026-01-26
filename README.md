@@ -1,6 +1,18 @@
 # Fabric Data Agent Chat Application
-
 A Next.js application that provides a chat interface to interact with Microsoft Fabric Data Agent, authenticated via Entra ID using MSAL.
+
+## NOTICE: Educational Purpose Only
+ **This code is provided solely for educational and learning purposes. It is NOT intended for production deployments without proper:**
+ - Validation of all functionality and edge cases
+ - Comprehensive testing (unit, integration, and system tests)
+ - Security audits and vulnerability assessments
+ - Performance optimization and load testing
+ - Code review by qualified professionals
+ - Compliance with organizational standards and best practices
+ 
+ **USE AT YOUR OWN RISK. No warranties or guarantees are provided.**
+ **Always consult with experienced developers and conduct thorough**
+ **testing before deploying any code to production environments.**
 
 ## Features
 
