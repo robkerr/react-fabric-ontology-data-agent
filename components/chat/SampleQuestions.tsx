@@ -7,10 +7,10 @@ interface SampleQuestionsProps {
 
 export function SampleQuestions({ onSelectQuestion }: SampleQuestionsProps) {
   return (
-    <div className="flex flex-col items-center justify-center h-full p-8">
-      <div className="max-w-3xl w-full space-y-6">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-semibold mb-2">Welcome to Fabric Data Agent</h2>
+    <div className="flex h-full flex-col items-center overflow-y-auto p-8">
+      <div className="w-full max-w-3xl space-y-6">
+        <div className="mb-8 text-center">
+          <h2 className="mb-2 text-2xl font-semibold">Welcome to Fabric Data Agent</h2>
           <p className="text-muted-foreground">
             Get started by selecting a sample question or type your own
           </p>
@@ -20,7 +20,7 @@ export function SampleQuestions({ onSelectQuestion }: SampleQuestionsProps) {
           {sampleQuestionsData.questions.map((question, index) => (
             <Card
               key={index}
-              className="p-4 cursor-pointer hover:bg-accent transition-colors"
+              className="cursor-pointer p-4 transition-colors hover:bg-accent"
               onClick={() => onSelectQuestion(question)}
             >
               <p className="text-sm">{question}</p>
