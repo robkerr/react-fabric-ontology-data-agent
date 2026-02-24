@@ -2,19 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { ChatInterface } from '@/components/chat/ChatInterface';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { TrackingPage } from '@/components/tracking/TrackingPage';
 import { Button } from '@/components/ui/button';
 
 export default function Home() {
   const { isAuthenticated, login } = useAuth();
+  const [activeNav, setActiveNav] = useState('tracking');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Wait for MSAL init
   useEffect(() => {
-    const initializeMsal = async () => {
-      setIsLoading(false);
-    };
-
-    initializeMsal();
+    setIsLoading(false);
   }, []);
 
   if (isLoading) {
@@ -29,9 +28,9 @@ export default function Home() {
     return (
       <div className="flex flex-col items-center justify-center h-screen gap-4">
         <div className="text-center space-y-4">
-          <h1 className="text-3xl font-bold">Fabric Data Agent Chat</h1>
+          <h1 className="text-3xl font-bold">Contoso Trucking</h1>
           <p className="text-muted-foreground">
-            Please sign in to start chatting with the Data Agent
+            Please sign in to access the Operations Center
           </p>
           <Button onClick={login} size="lg">
             Sign in with Microsoft
@@ -41,5 +40,16 @@ export default function Home() {
     );
   }
 
-  return <ChatInterface />;
+  return (
+    <DashboardLayout activeNav={activeNav} onNavChange={setActiveNav}>
+      {activeNav === 'tracking' && <TrackingPage />}
+      {activeNav !== 'tracking' && (
+        <div className="flex items-center justify-center h-full">
+          <p className="text-muted-foreground text-lg">
+            {activeNav.charAt(0).toUpperCase() + activeNav.slice(1)} — Coming Soon
+          </p>
+        </div>
+      )}
+    </DashboardLayout>
+  );
 }

@@ -1,4 +1,5 @@
 import { Providers } from './providers';
+import 'azure-maps-control/dist/atlas.min.css';
 import './globals.css';
 
 export default function RootLayout({
