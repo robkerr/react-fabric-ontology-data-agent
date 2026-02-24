@@ -1,7 +1,4 @@
-'use client';
-
-import { MsalProvider } from '@azure/msal-react';
-import { msalInstance } from '@/lib/msalConfig';
+import { Providers } from './providers';
 import './globals.css';
 
 export default function RootLayout({
@@ -12,9 +9,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <MsalProvider instance={msalInstance}>
-          {children}
-        </MsalProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
