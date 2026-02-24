@@ -12,20 +12,30 @@ const AzureMap = dynamic(
   { ssr: false }
 );
 
-function parseTerminalsFromMarkdown(markdown: string): Terminal[] {
-  const lines = markdown.split('\n').filter((l) => l.trim().startsWith('|'));
-  if (lines.length < 3) return [];
+function parseTerminalsFromResponse(content: string): Terminal[] {
+  // Try JSON first (may be wrapped in markdown code fences)
+  try {
+    const jsonMatch = content.match(/\[[\s\S]*\]/);
+    if (jsonMatch) {
+      const arr = JSON.parse(jsonMatch[0]);
+      const results = arr
+        .filter((item: Record<string, unknown>) => item.name && item.latitude != null && item.longitude != null)
+        .map((item: Record<string, unknown>) => ({
+          name: String(item.name),
+          latitude: Number(item.latitude),
+          longitude: Number(item.longitude),
+        }));
+      if (results.length > 0) return results;
+    }
+  } catch { /* fall through to markdown parsing */ }
 
-  // Skip header row and separator row
+  // Fallback: parse markdown table
+  const lines = content.split('\n').filter((l) => l.trim().startsWith('|'));
+  if (lines.length < 3) return [];
   const dataRows = lines.slice(2);
   const terminals: Terminal[] = [];
-
   for (const row of dataRows) {
-    const cells = row
-      .split('|')
-      .map((c) => c.trim())
-      .filter((c) => c.length > 0);
-
+    const cells = row.split('|').map((c) => c.trim()).filter((c) => c.length > 0);
     if (cells.length >= 3) {
       const name = cells[0];
       const lat = parseFloat(cells[1]);
@@ -35,7 +45,6 @@ function parseTerminalsFromMarkdown(markdown: string): Terminal[] {
       }
     }
   }
-
   return terminals;
 }
 
@@ -47,28 +56,41 @@ export function TrackingPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadTerminals() {
-      try {
-        const response = await queryDataAgent(
-          'Give me a list of terminals. List the name, latitude, and longitude. Return the results as a markdown table.'
-        );
-        if (cancelled) return;
+    async function loadTerminals(retries = 3) {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+          console.log(`Loading terminals (attempt ${attempt}/${retries})...`);
+          const response = await queryDataAgent(
+            'Give me a list of terminals. List the name, latitude, and longitude. Return the result as a JSON array of objects, each object with the following properties: name, latitude, longitude.'
+          );
+          if (cancelled) return;
 
-        const content = response.answer || response.result || '';
-        const parsed = parseTerminalsFromMarkdown(content);
-        setTerminals(parsed);
-      } catch (err) {
-        console.error('Failed to load terminals:', err);
-      } finally {
-        if (!cancelled) {
-          setIsLoadingTerminals(false);
-          // Focus the chat input after terminals load
-          setTimeout(() => chatInputRef.current?.focus(), 100);
+          console.log('Data Agent raw response:', JSON.stringify(response, null, 2));
+          const content = response.answer || response.result || '';
+          const parsed = parseTerminalsFromResponse(content);
+          if (parsed.length > 0) {
+            setTerminals(parsed);
+            return;
+          }
+          console.warn('Parsed 0 terminals from response, retrying...');
+        } catch (err) {
+          console.error(`Attempt ${attempt} failed:`, err);
+          if (attempt === retries) {
+            console.error('All retry attempts exhausted.');
+          } else {
+            // Wait before retrying
+            await new Promise((r) => setTimeout(r, 2000));
+          }
         }
       }
     }
 
-    loadTerminals();
+    loadTerminals().finally(() => {
+      if (!cancelled) {
+        setIsLoadingTerminals(false);
+        setTimeout(() => chatInputRef.current?.focus(), 100);
+      }
+    });
     return () => { cancelled = true; };
   }, []);
 

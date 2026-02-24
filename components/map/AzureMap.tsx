@@ -20,6 +20,8 @@ const US_BOUNDS: atlas.data.BoundingBox = [-125, 24, -66, 50];
 export function AzureMap({ terminals, isLoading }: AzureMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<atlas.Map | null>(null);
+  const dataSourceRef = useRef<atlas.source.DataSource | null>(null);
+  const layerRef = useRef<atlas.layer.SymbolLayer | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
   const subscriptionKey = process.env.NEXT_PUBLIC_AZURE_MAPS_KEY || '';
@@ -55,12 +57,19 @@ export function AzureMap({ terminals, isLoading }: AzureMapProps) {
     const map = mapInstance.current;
     if (!map || !mapReady || terminals.length === 0) return;
 
-    // Remove previous data sources
-    map.sources.clear();
-    map.layers.clear();
+    // Remove previous custom layer and source
+    if (layerRef.current) {
+      map.layers.remove(layerRef.current);
+      layerRef.current = null;
+    }
+    if (dataSourceRef.current) {
+      map.sources.remove(dataSourceRef.current);
+      dataSourceRef.current = null;
+    }
 
     const dataSource = new atlas.source.DataSource();
     map.sources.add(dataSource);
+    dataSourceRef.current = dataSource;
 
     terminals.forEach((t) => {
       const point = new atlas.data.Feature(
@@ -89,6 +98,7 @@ export function AzureMap({ terminals, isLoading }: AzureMapProps) {
     });
 
     map.layers.add(symbolLayer);
+    layerRef.current = symbolLayer;
 
     // Add popup on hover
     const popup = new atlas.Popup({

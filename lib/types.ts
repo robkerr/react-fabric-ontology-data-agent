@@ -56,6 +56,7 @@ export interface Run {
   thread_id: string;
   assistant_id: string;
   status: 'queued' | 'in_progress' | 'completed' | 'failed' | 'cancelled' | 'requires_action';
+  last_error?: { code: string; message: string } | null;
   started_at?: number;
   completed_at?: number;
   failed_at?: number;

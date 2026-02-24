@@ -72,7 +72,9 @@ async function apiRequest<T>(
     throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 async function createAssistant(token: string): Promise<Assistant> {
@@ -187,7 +189,7 @@ export async function queryDataAgent(question: string): Promise<FabricQueryRespo
     const completedRun = await pollRunCompletion(token, threadId, run.id);
 
     if (completedRun.status !== 'completed') {
-      throw new Error(`Run finished with status: ${completedRun.status}`);
+      throw new Error(`Run finished with status: ${completedRun.status}${completedRun.last_error ? ' - ' + JSON.stringify(completedRun.last_error) : ''}`);
     }
 
     // Step 6: Retrieve messages
