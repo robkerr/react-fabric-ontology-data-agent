@@ -24,7 +24,8 @@ export function useFabricAgent() {
     setError(null);
 
     try {
-      const response = await queryDataAgent(question);
+      const queryWithMarkdown = `${question}\nReturn the results as a markdown table.`;
+      const response = await queryDataAgent(queryWithMarkdown);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
