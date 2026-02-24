@@ -1,15 +1,16 @@
 'use client';
 
-import { useFabricAgent } from '@/hooks/useFabricAgent';
+import { useFabricAgent, TruckLocation } from '@/hooks/useFabricAgent';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 
 interface ChatInterfaceProps {
   inputRef?: React.RefObject<HTMLInputElement>;
+  onTrucksDetected?: (trucks: TruckLocation[]) => void;
 }
 
-export function ChatInterface({ inputRef }: ChatInterfaceProps) {
-  const { messages, isLoading, sendQuery, resetConversation } = useFabricAgent();
+export function ChatInterface({ inputRef, onTrucksDetected }: ChatInterfaceProps) {
+  const { messages, isLoading, sendQuery, resetConversation } = useFabricAgent({ onTrucksDetected });
 
   return (
     <div className="flex h-full flex-col">

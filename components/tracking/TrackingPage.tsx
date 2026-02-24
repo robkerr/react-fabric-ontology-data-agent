@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Terminal } from '@/components/map/AzureMap';
+import { TruckPin } from '@/components/map/AzureMap';
 import { ChatInterface } from '@/components/chat/ChatInterface';
+import { TruckLocation } from '@/hooks/useFabricAgent';
 import { queryDataAgent } from '@/lib/fabricApi';
 
 // Dynamic import to avoid SSR issues with Azure Maps
@@ -50,8 +52,17 @@ function parseTerminalsFromResponse(content: string): Terminal[] {
 
 export function TrackingPage() {
   const [terminals, setTerminals] = useState<Terminal[]>([]);
+  const [trucks, setTrucks] = useState<TruckPin[]>([]);
   const [isLoadingTerminals, setIsLoadingTerminals] = useState(true);
   const chatInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTrucksDetected = useCallback((detected: TruckLocation[]) => {
+    setTrucks(detected.map((t) => ({
+      label: t.label,
+      latitude: t.latitude,
+      longitude: t.longitude,
+    })));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,12 +109,12 @@ export function TrackingPage() {
     <div className="flex h-full">
       {/* Map panel - 70% */}
       <div className="w-[70%] h-full border-r">
-        <AzureMap terminals={terminals} isLoading={isLoadingTerminals} />
+        <AzureMap terminals={terminals} trucks={trucks} isLoading={isLoadingTerminals} />
       </div>
 
       {/* Chat panel - 30% */}
       <div className="w-[30%] h-full">
-        <ChatInterface inputRef={chatInputRef} />
+        <ChatInterface inputRef={chatInputRef} onTrucksDetected={handleTrucksDetected} />
       </div>
     </div>
   );

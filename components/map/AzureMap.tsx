@@ -9,19 +9,29 @@ export interface Terminal {
   longitude: number;
 }
 
+export interface TruckPin {
+  label: string;
+  latitude: number;
+  longitude: number;
+}
+
 interface AzureMapProps {
   terminals: Terminal[];
+  trucks: TruckPin[];
   isLoading: boolean;
 }
 
 // Continental US bounds
 const US_BOUNDS: atlas.data.BoundingBox = [-125, 24, -66, 50];
 
-export function AzureMap({ terminals, isLoading }: AzureMapProps) {
+export function AzureMap({ terminals, trucks, isLoading }: AzureMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<atlas.Map | null>(null);
   const dataSourceRef = useRef<atlas.source.DataSource | null>(null);
   const layerRef = useRef<atlas.layer.SymbolLayer | null>(null);
+  const truckSourceRef = useRef<atlas.source.DataSource | null>(null);
+  const truckLayerRef = useRef<atlas.layer.SymbolLayer | null>(null);
+  const truckPopupRef = useRef<atlas.Popup | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
   const subscriptionKey = process.env.NEXT_PUBLIC_AZURE_MAPS_KEY || '';
@@ -143,9 +153,98 @@ export function AzureMap({ terminals, isLoading }: AzureMapProps) {
     }
   }, [mapReady, terminals]);
 
+  // Add truck pins when data arrives
+  const addTrucks = useCallback(() => {
+    const map = mapInstance.current;
+    if (!map || !mapReady) return;
+
+    // Remove previous truck layer and source
+    if (truckLayerRef.current) {
+      map.layers.remove(truckLayerRef.current);
+      truckLayerRef.current = null;
+    }
+    if (truckSourceRef.current) {
+      map.sources.remove(truckSourceRef.current);
+      truckSourceRef.current = null;
+    }
+    if (truckPopupRef.current) {
+      truckPopupRef.current.close();
+      truckPopupRef.current = null;
+    }
+
+    if (trucks.length === 0) return;
+
+    const truckSource = new atlas.source.DataSource();
+    map.sources.add(truckSource);
+    truckSourceRef.current = truckSource;
+
+    trucks.forEach((t) => {
+      const point = new atlas.data.Feature(
+        new atlas.data.Point([t.longitude, t.latitude]),
+        { label: t.label }
+      );
+      truckSource.add(point);
+    });
+
+    const truckLayer = new atlas.layer.SymbolLayer(truckSource, undefined, {
+      iconOptions: {
+        image: 'pin-round-red',
+        anchor: 'center',
+        allowOverlap: true,
+        size: 0.8,
+      },
+    });
+
+    map.layers.add(truckLayer);
+    truckLayerRef.current = truckLayer;
+
+    // Popup on hover for truck pins
+    const popup = new atlas.Popup({
+      pixelOffset: [0, -18],
+      closeButton: false,
+    });
+    truckPopupRef.current = popup;
+
+    map.events.add('mousemove', truckLayer, (e: atlas.MapMouseEvent) => {
+      if (e.shapes && e.shapes.length > 0) {
+        const shape = e.shapes[0] as atlas.Shape;
+        const props = shape.getProperties();
+        const coords = shape.getCoordinates() as atlas.data.Position;
+        popup.setOptions({
+          content: `<div style="padding:6px 10px;font-size:13px;font-weight:600">${props.label}</div>`,
+          position: coords,
+        });
+        popup.open(map);
+      }
+    });
+
+    map.events.add('mouseleave', truckLayer, () => {
+      popup.close();
+    });
+
+    // Zoom to fit all points (terminals + trucks)
+    const allPositions = [
+      ...terminals.map((t) => [t.longitude, t.latitude] as atlas.data.Position),
+      ...trucks.map((t) => [t.longitude, t.latitude] as atlas.data.Position),
+    ];
+    if (allPositions.length > 1) {
+      const bbox = atlas.data.BoundingBox.fromPositions(allPositions);
+      map.setCamera({
+        bounds: bbox,
+        padding: 60,
+        type: 'ease',
+        duration: 1000,
+      });
+    }
+  }, [mapReady, trucks, terminals]);
+
   useEffect(() => {
     addTerminals();
   }, [addTerminals]);
+
+  useEffect(() => {
+    addTrucks();
+  }, [addTrucks]);
 
   return (
     <div className="relative h-full w-full">
